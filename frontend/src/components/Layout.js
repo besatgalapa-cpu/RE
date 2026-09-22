@@ -81,7 +81,7 @@ export default function Layout({ children }) {
 
         <div className="p-4 border-t border-slate-100">
           <div className="rounded-xl bg-gradient-to-br from-teal-600 to-teal-700 p-4 text-white">
-            <div className="text-xs font-semibold opacity-90">Dinas ESDM</div>
+            <div className="text-xs font-semibold opacity-90">Bagian Perekonomian &amp; SDA Setda</div>
             <div className="text-[11px] opacity-75 mt-0.5">Pemerintah Kabupaten Murung Raya, Kalimantan Tengah</div>
           </div>
         </div>
@@ -113,7 +113,7 @@ export default function Layout({ children }) {
               <button className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-full hover:bg-slate-100 transition-colors" data-testid="user-menu">
                 <div className="w-9 h-9 rounded-full bg-teal-600 text-white flex items-center justify-center text-sm font-bold">{initials}</div>
                 <div className="hidden sm:block text-left leading-tight">
-                  <div className="text-sm font-semibold text-slate-900">{user?.name}</div>
+                  <div className="text-sm font-semibold text-slate-900">{user?.username}</div>
                   <div className="text-[11px] text-slate-500">{user?.role}</div>
                 </div>
                 <ChevronDown className="w-4 h-4 text-slate-400 hidden sm:block" />
