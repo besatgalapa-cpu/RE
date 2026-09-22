@@ -13,21 +13,22 @@ import {
 
 const NAV = [
   { to: "/dashboard", label: "Ringkasan", icon: LayoutDashboard, tid: "nav-dashboard" },
-  { to: "/upload", label: "Upload Excel", icon: FileSpreadsheet, tid: "nav-upload" },
+  { to: "/upload", label: "Upload Excel", icon: FileSpreadsheet, tid: "nav-upload", perm: "data:write" },
   { to: "/kecamatan", label: "Data Kecamatan", icon: Building2, tid: "nav-kecamatan" },
   { to: "/desa", label: "Data Desa & Kelurahan", icon: MapPin, tid: "nav-desa" },
   { to: "/periode", label: "Periode Data", icon: Calendar, tid: "nav-periode" },
-  { to: "/pengguna", label: "Pengguna Admin", icon: UserCog, tid: "nav-pengguna" },
+  { to: "/pengguna", label: "Pengguna Admin", icon: UserCog, tid: "nav-pengguna", perm: "user:manage" },
   { to: "/pengaturan", label: "Pengaturan", icon: Settings, tid: "nav-pengaturan" },
   { to: "/galeri", label: "Galeri Foto", icon: Images, tid: "nav-galeri" },
 ];
 
 export default function Layout({ children }) {
   const [open, setOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, can } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const active = NAV.find((n) => location.pathname.startsWith(n.to));
+  const visibleNav = NAV.filter((n) => !n.perm || can(n.perm));
 
   const doLogout = async () => {
     await logout();
@@ -59,7 +60,7 @@ export default function Layout({ children }) {
 
         <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
           <div className="px-3 pb-2 font-mono text-[10px] uppercase tracking-widest text-slate-400">Menu Utama</div>
-          {NAV.map((n) => (
+          {visibleNav.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}

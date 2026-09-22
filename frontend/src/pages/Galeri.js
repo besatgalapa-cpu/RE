@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import api, { apiError } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { MapPin, X, ZoomIn, Loader2, Plus, Trash2, UploadCloud, ImageOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,21 +11,24 @@ import { toast } from "sonner";
 
 const KATEGORI = ["Wilayah", "Energi Terbarukan", "Jaringan Listrik", "Kegiatan"];
 
-function PhotoImg({ item, className }) {
+function PhotoImg({ item, variant = "full", className }) {
   const [src, setSrc] = useState(item.external_url || null);
   useEffect(() => {
     if (item.external_url) { setSrc(item.external_url); return; }
     let url;
-    api.get(`/galeri/file/${item.id}`, { responseType: "blob" })
+    const v = variant === "thumb" && item.has_thumb ? "?variant=thumb" : "";
+    api.get(`/galeri/file/${item.id}${v}`, { responseType: "blob" })
       .then((r) => { url = URL.createObjectURL(r.data); setSrc(url); })
       .catch(() => setSrc(null));
     return () => { if (url) URL.revokeObjectURL(url); };
-  }, [item.id, item.external_url]);
+  }, [item.id, item.external_url, variant, item.has_thumb]);
   if (!src) return <div className={`flex items-center justify-center bg-slate-100 ${className}`}><ImageOff className="w-8 h-8 text-slate-300" /></div>;
   return <img src={src} alt={item.judul} loading="lazy" className={className} />;
 }
 
 export default function Galeri() {
+  const { can } = useAuth();
+  const canWrite = can("galeri:write");
   const [photos, setPhotos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [kat, setKat] = useState("Semua");
@@ -73,11 +77,13 @@ export default function Galeri() {
           <p className="text-sm text-slate-500">Dokumentasi program elektrifikasi Kabupaten Murung Raya</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
+          {canWrite && (
           <DialogTrigger asChild>
             <Button className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white" data-testid="galeri-upload-btn">
               <Plus className="w-4 h-4 mr-2" /> Upload Foto
             </Button>
           </DialogTrigger>
+          )}
           <DialogContent>
             <DialogHeader><DialogTitle>Upload Foto Dokumentasi</DialogTitle></DialogHeader>
             <div className="space-y-3">
@@ -135,7 +141,7 @@ export default function Galeri() {
               className="group relative bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl hover:shadow-slate-200/60 hover:-translate-y-1 transition-all duration-300 animate-fade-up"
               style={{ animationDelay: `${i * 60}ms` }}>
               <div className="aspect-[4/3] overflow-hidden bg-slate-100 cursor-pointer" onClick={() => setLightbox(p)}>
-                <PhotoImg item={p} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                <PhotoImg item={p} variant="thumb" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
               </div>
               <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
               <ZoomIn className="absolute top-1/3 left-1/2 -translate-x-1/2 w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
@@ -147,7 +153,7 @@ export default function Galeri() {
                     <span className="ml-2 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 font-medium">{p.kategori}</span>
                   </div>
                 </div>
-                <button onClick={() => del(p.id)} className="p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors" data-testid={`galeri-del-${i}`}>
+                <button onClick={() => del(p.id)} className={`p-1.5 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 transition-colors ${canWrite ? "" : "hidden"}`} data-testid={`galeri-del-${i}`}>
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
@@ -160,7 +166,7 @@ export default function Galeri() {
         <div className="fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setLightbox(null)} data-testid="galeri-lightbox">
           <button className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white" data-testid="galeri-close"><X className="w-5 h-5" /></button>
           <div className="max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
-            <PhotoImg item={lightbox} className="w-full max-h-[75vh] object-contain rounded-2xl" />
+            <PhotoImg item={lightbox} variant="full" className="w-full max-h-[75vh] object-contain rounded-2xl" />
             <div className="mt-4 text-center text-white">
               <div className="font-bold text-lg">{lightbox.judul}</div>
               <div className="text-sm text-slate-300">{lightbox.kecamatan ? `Kec. ${lightbox.kecamatan} · ` : ""}{lightbox.kategori}</div>

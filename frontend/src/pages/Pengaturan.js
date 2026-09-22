@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api, { apiError } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import { Settings, Loader2, Save, Building, Target, Database, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function Pengaturan() {
+  const { can } = useAuth();
   const [s, setS] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -23,6 +25,8 @@ export default function Pengaturan() {
       setS(data); toast.success("Pengaturan disimpan");
     } catch (e) { toast.error(apiError(e)); } finally { setSaving(false); }
   };
+
+  const canWrite = can("data:write");
 
   if (loading || !s) return <div className="flex justify-center h-40 items-center"><Loader2 className="w-7 h-7 animate-spin text-teal-600" /></div>;
 
@@ -58,8 +62,8 @@ export default function Pengaturan() {
       </div>
 
       <div className="flex justify-end">
-        <Button onClick={save} disabled={saving} className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold" data-testid="save-settings-btn">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />} Simpan Pengaturan
+        <Button onClick={save} disabled={saving || !canWrite} className="rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold disabled:opacity-50" data-testid="save-settings-btn">
+          {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />} {canWrite ? "Simpan Pengaturan" : "Hanya Baca"}
         </Button>
       </div>
     </div>

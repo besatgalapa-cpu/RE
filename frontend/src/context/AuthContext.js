@@ -27,8 +27,15 @@ export function AuthProvider({ children }) {
     setUser(false);
   };
 
+  const PERMS = {
+    "Super Admin": ["user:manage", "data:write", "galeri:write"],
+    "Verifikator Data": ["data:write", "galeri:write"],
+    "Viewer Eksekutif": [],
+  };
+  const can = (action) => (PERMS[user?.role] || []).includes(action);
+
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout }}>
+    <AuthContext.Provider value={{ user, setUser, login, logout, can }}>
       {children}
     </AuthContext.Provider>
   );

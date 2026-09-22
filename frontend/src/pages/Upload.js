@@ -45,7 +45,7 @@ export default function Upload() {
     setSaving(true);
     try {
       const { data } = await api.post("/upload/commit", {
-        triwulan, tahun: Number(tahun), rows: preview.rows, set_active: true,
+        triwulan, tahun: Number(tahun), rows: preview.rows, set_active: true, archive: preview.archive,
       });
       toast.success(data.message);
       setTimeout(() => navigate("/dashboard"), 800);

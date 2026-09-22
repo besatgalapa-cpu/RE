@@ -1,8 +1,9 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, UploadFile, File, Form
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Response, Depends, UploadFile, File, Form, Query
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
+import io
 import json
 import logging
 import uuid
@@ -11,6 +12,7 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 from datetime import datetime, timezone
 from bson import ObjectId
+from PIL import Image
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -37,6 +39,28 @@ def now_iso():
 
 async def current_user(request: Request):
     return await get_current_user(request, db)
+
+
+# ---------------- Authorization (RBAC, single-org) ----------------
+ROLE_PERMS = {
+    "Super Admin": {"user:manage", "data:write", "galeri:write"},
+    "Verifikator Data": {"data:write", "galeri:write"},
+    "Viewer Eksekutif": set(),
+}
+
+
+def perms_for(role: str) -> set:
+    return ROLE_PERMS.get(role, set())
+
+
+def require(action: str):
+    """Deny-by-default dependency: authorizes `action` for the caller's role, returns the user."""
+    async def dep(request: Request):
+        user = await get_current_user(request, db)
+        if action not in perms_for(user.get("role", "")):
+            raise HTTPException(status_code=403, detail="Anda tidak memiliki izin untuk aksi ini")
+        return user
+    return dep
 
 
 # ---------------- Models ----------------
@@ -79,6 +103,7 @@ class CommitInput(BaseModel):
     tahun: int
     rows: List[dict]
     set_active: bool = True
+    archive: Optional[dict] = None
 
 
 # ---------------- Auth ----------------
@@ -123,13 +148,13 @@ async def me(user=Depends(current_user)):
 
 # ---------------- Users ----------------
 @api_router.get("/users")
-async def list_users(user=Depends(current_user)):
+async def list_users(user=Depends(require("user:manage"))):
     docs = await db.users.find().sort("created_at", 1).to_list(500)
     return [_clean_user(d) for d in docs]
 
 
 @api_router.post("/users")
-async def create_user(payload: UserCreate, user=Depends(current_user)):
+async def create_user(payload: UserCreate, user=Depends(require("user:manage"))):
     username = payload.username.strip().lower()
     if await db.users.find_one({"username": username}):
         raise HTTPException(status_code=400, detail="Username sudah digunakan")
@@ -144,7 +169,7 @@ async def create_user(payload: UserCreate, user=Depends(current_user)):
 
 
 @api_router.patch("/users/{user_id}")
-async def update_user(user_id: str, payload: UserUpdate, user=Depends(current_user)):
+async def update_user(user_id: str, payload: UserUpdate, user=Depends(require("user:manage"))):
     updates = {}
     if payload.name is not None:
         updates["name"] = payload.name.strip()
@@ -162,7 +187,7 @@ async def update_user(user_id: str, payload: UserUpdate, user=Depends(current_us
 
 
 @api_router.delete("/users/{user_id}")
-async def delete_user(user_id: str, user=Depends(current_user)):
+async def delete_user(user_id: str, user=Depends(require("user:manage"))):
     if str(user.get("id")) == user_id:
         raise HTTPException(status_code=400, detail="Tidak dapat menghapus akun sendiri")
     await db.users.delete_one({"_id": ObjectId(user_id)})
@@ -179,11 +204,12 @@ async def list_periods(user=Depends(current_user)):
     docs.sort(key=lambda p: (p["tahun"], ROMAN.get(p["triwulan"], 0)))
     for d in docs:
         d["kecamatan_count"] = await db.kecamatan.count_documents({"period_id": d["id"]})
+        d["has_excel"] = bool(d.get("excel_path"))
     return docs
 
 
 @api_router.post("/periods")
-async def create_period(payload: PeriodCreate, user=Depends(current_user)):
+async def create_period(payload: PeriodCreate, user=Depends(require("data:write"))):
     kode = f"TW{ROMAN.get(payload.triwulan, payload.triwulan)}-{payload.tahun}"
     if await db.periods.find_one({"kode": kode}):
         raise HTTPException(status_code=400, detail="Periode sudah ada")
@@ -198,7 +224,7 @@ async def create_period(payload: PeriodCreate, user=Depends(current_user)):
 
 
 @api_router.patch("/periods/{period_id}/activate")
-async def activate_period(period_id: str, user=Depends(current_user)):
+async def activate_period(period_id: str, user=Depends(require("data:write"))):
     if not await db.periods.find_one({"id": period_id}):
         raise HTTPException(status_code=404, detail="Periode tidak ditemukan")
     await db.periods.update_many({}, {"$set": {"is_active": False}})
@@ -207,7 +233,7 @@ async def activate_period(period_id: str, user=Depends(current_user)):
 
 
 @api_router.patch("/periods/{period_id}/lock")
-async def toggle_lock(period_id: str, user=Depends(current_user)):
+async def toggle_lock(period_id: str, user=Depends(require("data:write"))):
     p = await db.periods.find_one({"id": period_id})
     if not p:
         raise HTTPException(status_code=404, detail="Periode tidak ditemukan")
@@ -216,7 +242,7 @@ async def toggle_lock(period_id: str, user=Depends(current_user)):
 
 
 @api_router.delete("/periods/{period_id}")
-async def delete_period(period_id: str, user=Depends(current_user)):
+async def delete_period(period_id: str, user=Depends(require("data:write"))):
     await db.periods.delete_one({"id": period_id})
     await db.kecamatan.delete_many({"period_id": period_id})
     return {"message": "Periode dihapus"}
@@ -352,7 +378,7 @@ async def get_settings(user=Depends(current_user)):
 
 
 @api_router.put("/settings")
-async def update_settings(payload: SettingsInput, user=Depends(current_user)):
+async def update_settings(payload: SettingsInput, user=Depends(require("data:write"))):
     doc = payload.model_dump()
     doc["key"] = "main"
     doc["updated_at"] = now_iso()
@@ -363,7 +389,7 @@ async def update_settings(payload: SettingsInput, user=Depends(current_user)):
 
 # ---------------- Upload ----------------
 @api_router.post("/upload/preview")
-async def upload_preview(file: UploadFile = File(...), user=Depends(current_user)):
+async def upload_preview(file: UploadFile = File(...), user=Depends(require("data:write"))):
     if not file.filename.lower().endswith((".xlsx", ".xls")):
         raise HTTPException(status_code=400, detail="Format file harus .xlsx atau .xls")
     content = await file.read()
@@ -374,11 +400,19 @@ async def upload_preview(file: UploadFile = File(...), user=Depends(current_user
     except Exception as e:
         logger.exception("parse error")
         raise HTTPException(status_code=422, detail=f"Gagal membaca file: {e}")
-    return {"filename": file.filename, "rows": rows, "summary": summary}
+    # Archive the raw file to object storage so it can be re-downloaded per period
+    archive = None
+    try:
+        apath = f"murung-raya-re/excel/{uuid.uuid4()}.xlsx"
+        r = put_object(apath, content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        archive = {"path": r["path"], "filename": file.filename, "size": r.get("size", len(content))}
+    except Exception as e:
+        logger.error(f"Excel archive failed: {e}")
+    return {"filename": file.filename, "rows": rows, "summary": summary, "archive": archive}
 
 
 @api_router.post("/upload/commit")
-async def upload_commit(payload: CommitInput, user=Depends(current_user)):
+async def upload_commit(payload: CommitInput, user=Depends(require("data:write"))):
     kode = f"TW{ROMAN.get(payload.triwulan, payload.triwulan)}-{payload.tahun}"
     period = await db.periods.find_one({"kode": kode})
     if period:
@@ -406,7 +440,30 @@ async def upload_commit(payload: CommitInput, user=Depends(current_user)):
     if payload.set_active:
         await db.periods.update_many({}, {"$set": {"is_active": False}})
         await db.periods.update_one({"id": period_id}, {"$set": {"is_active": True}})
+    if payload.archive and payload.archive.get("path"):
+        await db.periods.update_one({"id": period_id}, {"$set": {
+            "excel_path": payload.archive["path"],
+            "excel_filename": payload.archive.get("filename"),
+            "excel_uploaded_at": now_iso(),
+        }})
     return {"message": "Data tersimpan & dashboard diperbarui", "period_id": period_id, "saved": len(docs)}
+
+
+@api_router.get("/periods/{period_id}/excel")
+async def download_period_excel(period_id: str, user=Depends(current_user)):
+    p = await db.periods.find_one({"id": period_id})
+    if not p or not p.get("excel_path"):
+        raise HTTPException(status_code=404, detail="Arsip Excel tidak tersedia untuk periode ini")
+    try:
+        data, _ = get_object(p["excel_path"])
+    except Exception:
+        raise HTTPException(status_code=404, detail="File arsip tidak ditemukan di storage")
+    fn = p.get("excel_filename") or f"{p['kode']}.xlsx"
+    return Response(
+        content=data,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{fn}"'},
+    )
 
 
 # ---------------- Galeri Foto (Object Storage) ----------------
@@ -414,29 +471,55 @@ ALLOWED_IMG = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 MAX_UPLOAD = 10 * 1024 * 1024
 
 
+def make_thumbnail(data: bytes, max_w: int = 720, quality: int = 72) -> bytes:
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    if img.width > max_w:
+        ratio = max_w / float(img.width)
+        img = img.resize((max_w, max(1, int(img.height * ratio))))
+    out = io.BytesIO()
+    img.save(out, format="JPEG", quality=quality, optimize=True)
+    return out.getvalue()
+
+
 @api_router.get("/galeri")
 async def galeri_list(user=Depends(current_user)):
     docs = await db.galeri.find({"is_deleted": False}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    for d in docs:
+        d["has_thumb"] = bool(d.get("thumb_path"))
     return docs
 
 
 @api_router.post("/galeri/upload")
 async def galeri_upload(file: UploadFile = File(...), judul: str = Form(""),
                         kecamatan: str = Form(""), kategori: str = Form("Wilayah"),
-                        user=Depends(current_user)):
+                        user=Depends(require("galeri:write"))):
     if file.content_type not in ALLOWED_IMG:
         raise HTTPException(status_code=400, detail="File harus berupa gambar (JPG/PNG/WEBP/GIF)")
     data = await file.read()
     if len(data) > MAX_UPLOAD:
         raise HTTPException(status_code=400, detail="Ukuran file maksimal 10 MB")
     ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "jpg"
-    path = f"murung-raya-re/galeri/{uuid.uuid4()}.{ext}"
+    uid = uuid.uuid4()
+    path = f"murung-raya-re/galeri/{uid}.{ext}"
     result = put_object(path, data, file.content_type)
+    # Generate + store a compressed thumbnail for fast gallery loading
+    thumb_path = None
+    thumb_size = 0
+    try:
+        thumb_bytes = make_thumbnail(data)
+        tp = f"murung-raya-re/galeri/thumb/{uid}.jpg"
+        tr = put_object(tp, thumb_bytes, "image/jpeg")
+        thumb_path = tr["path"]
+        thumb_size = tr.get("size", len(thumb_bytes))
+    except Exception as e:
+        logger.error(f"Thumbnail generation failed: {e}")
     doc = {
-        "id": str(uuid.uuid4()), "storage_path": result["path"], "external_url": None,
-        "judul": judul.strip() or file.filename, "kecamatan": kecamatan.strip(), "kategori": kategori,
+        "id": str(uuid.uuid4()), "storage_path": result["path"], "thumb_path": thumb_path,
+        "external_url": None, "judul": judul.strip() or file.filename,
+        "kecamatan": kecamatan.strip(), "kategori": kategori,
         "content_type": file.content_type, "size": result.get("size", len(data)),
-        "original_filename": file.filename, "is_deleted": False, "created_at": now_iso(),
+        "thumb_size": thumb_size, "original_filename": file.filename,
+        "is_deleted": False, "created_at": now_iso(),
     }
     await db.galeri.insert_one(doc)
     doc.pop("_id", None)
@@ -444,19 +527,24 @@ async def galeri_upload(file: UploadFile = File(...), judul: str = Form(""),
 
 
 @api_router.get("/galeri/file/{file_id}")
-async def galeri_file(file_id: str, user=Depends(current_user)):
+async def galeri_file(file_id: str, variant: str = Query("full"), user=Depends(current_user)):
     rec = await db.galeri.find_one({"id": file_id, "is_deleted": False})
-    if not rec or not rec.get("storage_path"):
+    if not rec:
+        raise HTTPException(status_code=404, detail="File tidak ditemukan")
+    use_thumb = variant == "thumb" and rec.get("thumb_path")
+    obj_path = rec.get("thumb_path") if use_thumb else rec.get("storage_path")
+    if not obj_path:
         raise HTTPException(status_code=404, detail="File tidak ditemukan")
     try:
-        data, ctype = get_object(rec["storage_path"])
+        data, ctype = get_object(obj_path)
     except Exception:
         raise HTTPException(status_code=404, detail="Objek tidak ditemukan di storage")
-    return Response(content=data, media_type=rec.get("content_type") or ctype)
+    media = "image/jpeg" if use_thumb else (rec.get("content_type") or ctype)
+    return Response(content=data, media_type=media)
 
 
 @api_router.delete("/galeri/{file_id}")
-async def galeri_delete(file_id: str, user=Depends(current_user)):
+async def galeri_delete(file_id: str, user=Depends(require("galeri:write"))):
     res = await db.galeri.update_one({"id": file_id}, {"$set": {"is_deleted": True}})
     if not res.matched_count:
         raise HTTPException(status_code=404, detail="Foto tidak ditemukan")
