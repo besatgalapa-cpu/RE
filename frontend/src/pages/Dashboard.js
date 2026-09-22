@@ -25,6 +25,7 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [periodId, setPeriodId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [kecMetric, setKecMetric] = useState("re_pln");
 
   const load = (pid) => {
     setLoading(true);
@@ -146,16 +147,39 @@ export default function Dashboard() {
 
         {/* Bar per kecamatan */}
         <div className="bg-white rounded-2xl border border-slate-200 p-5 lg:col-span-2" data-testid="chart-kecamatan">
-          <h3 className="font-bold text-slate-900">Rasio Elektrifikasi per Kecamatan</h3>
-          <p className="text-xs text-slate-500 mb-2">{per_kecamatan.length} kecamatan, diurutkan tertinggi</p>
+          <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+            <div>
+              <h3 className="font-bold text-slate-900">
+                {kecMetric === "re_pln" ? "Rasio Elektrifikasi PLN per Kecamatan"
+                  : kecMetric === "re_nonpln" ? "Rasio Elektrifikasi Non-PLN per Kecamatan"
+                  : "Rasio Elektrifikasi per Kecamatan"}
+              </h3>
+              <p className="text-xs text-slate-500 mb-2">{per_kecamatan.length} kecamatan, diurutkan tertinggi</p>
+            </div>
+            <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50" data-testid="kec-metric-toggle">
+              {[
+                { k: "re_pln", label: "PLN" },
+                { k: "re_nonpln", label: "Non-PLN" },
+                { k: "re_total", label: "Total" },
+              ].map((m) => (
+                <button key={m.k} onClick={() => setKecMetric(m.k)} data-testid={`kec-metric-${m.k}`}
+                  className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${kecMetric === m.k ? "bg-white shadow-sm text-teal-700" : "text-slate-500 hover:text-slate-700"}`}>
+                  {m.label}
+                </button>
+              ))}
+            </div>
+          </div>
           <ResponsiveContainer width="100%" height={320}>
-            <BarChart data={per_kecamatan} layout="vertical" margin={{ left: 10, right: 20 }}>
+            <BarChart data={[...per_kecamatan].sort((a, b) => b[kecMetric] - a[kecMetric])} layout="vertical" margin={{ left: 10, right: 20 }}>
               <CartesianGrid horizontal={false} stroke="#f1f5f9" />
               <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: "#94a3b8" }} unit="%" />
               <YAxis type="category" dataKey="nama" width={120} tick={{ fontSize: 11, fill: "#475569" }} tickFormatter={titleCase} />
               <Tooltip formatter={(v) => fmtPct(v)} cursor={{ fill: "#f8fafc" }} />
-              <Bar dataKey="re_total" radius={[0, 6, 6, 0]} barSize={16}>
-                {per_kecamatan.map((e, i) => <Cell key={i} fill={e.re_total >= 90 ? COLORS.primary : e.re_total >= 70 ? COLORS.pln : COLORS.belum} />)}
+              <Bar dataKey={kecMetric} radius={[0, 6, 6, 0]} barSize={16}>
+                {per_kecamatan.map((e, i) => (
+                  <Cell key={i} fill={kecMetric === "re_pln" ? COLORS.pln : kecMetric === "re_nonpln" ? COLORS.nonpln
+                    : (e.re_total >= 90 ? COLORS.primary : e.re_total >= 70 ? COLORS.pln : COLORS.belum)} />
+                ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
