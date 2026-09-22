@@ -16,7 +16,6 @@ const NAV = [
   { to: "/upload", label: "Upload Excel", icon: FileSpreadsheet, tid: "nav-upload" },
   { to: "/kecamatan", label: "Data Kecamatan", icon: Building2, tid: "nav-kecamatan" },
   { to: "/desa", label: "Data Desa & Kelurahan", icon: MapPin, tid: "nav-desa" },
-  { to: "/keluarga", label: "Data Keluarga / RT", icon: Users, tid: "nav-keluarga" },
   { to: "/periode", label: "Periode Data", icon: Calendar, tid: "nav-periode" },
   { to: "/pengguna", label: "Pengguna Admin", icon: UserCog, tid: "nav-pengguna" },
   { to: "/pengaturan", label: "Pengaturan", icon: Settings, tid: "nav-pengaturan" },
