@@ -1,0 +1,257 @@
+{
+  "project_info": {
+    "title": "Sistem Informasi & Laporan Rasio Elektrifikasi Kabupaten Murung Raya",
+    "description": "Admin Panel & Dashboard Eksekutif Laporan Elektrifikasi Daerah Kabupaten Murung Raya, Kalimantan Tengah. Fitur lengkap mencakup Login Admin, Dashboard Ringkasan KPI, Grafik Distribusi PLN vs Non-PLN, Rasio per Kecamatan, Tren Triwulanan, Flow Upload & Validasi Excel, Data Kecamatan, Data Desa/Kelurahan, Data Keluarga/RT, Manajemen Periode Data, Pengguna Admin, dan Pengaturan Sistem.",
+    "regency": "Kabupaten Murung Raya",
+    "province": "Kalimantan Tengah",
+    "theme": "Light Modern Professional Civic Administrative",
+    "app_type": "Dashboard Admin Panel & Executive Analytics"
+  },
+  "typography": {
+    "heading_font": "Plus Jakarta Sans, sans-serif",
+    "body_font": "Plus Jakarta Sans, sans-serif",
+    "mono_font": "JetBrains Mono, monospace",
+    "font_import_url": "https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap",
+    "hierarchy": {
+      "h1_hero": "text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900",
+      "h2_section": "text-2xl sm:text-3xl font-bold tracking-tight text-slate-900",
+      "h3_card": "text-lg sm:text-xl font-semibold text-slate-900",
+      "subtitle": "text-sm sm:text-base font-normal text-slate-600",
+      "caption_mono": "font-mono text-xs font-medium text-slate-500 tracking-wider uppercase",
+      "body": "text-sm text-slate-700 leading-relaxed"
+    }
+  },
+  "colors": {
+    "archetype": "Civic Precision & Sustainable Energy (Light Theme)",
+    "palette": {
+      "primary": {
+        "main": "#0D9488",
+        "hover": "#0F766E",
+        "active": "#115E59",
+        "light": "#CCFBF1",
+        "text": "#134E4A"
+      },
+      "secondary_energy": {
+        "pln_blue": "#0284C7",
+        "pln_blue_light": "#E0F2FE",
+        "non_pln_green": "#16A34A",
+        "non_pln_light": "#DCFCE7",
+        "unpowered_amber": "#F59E0B",
+        "unpowered_light": "#FEF3C7"
+      },
+      "surfaces": {
+        "body_bg": "#F8FAFC",
+        "sidebar_bg": "#FFFFFF",
+        "card_bg": "#FFFFFF",
+        "card_border": "#E2E8F0",
+        "table_header_bg": "#F1F5F9",
+        "hover_row": "#F8FAFC"
+      },
+      "text": {
+        "heading": "#0F172A",
+        "body": "#334155",
+        "muted": "#64748B",
+        "inverse": "#FFFFFF"
+      },
+      "accents": {
+        "success": "#10B981",
+        "warning": "#F59E0B",
+        "danger": "#EF4444",
+        "info": "#3B82F6"
+      }
+    },
+    "forbidden_colors": [
+      "#7351B7",
+      "#1B93A4"
+    ]
+  },
+  "layout_and_navigation": {
+    "sidebar": {
+      "width": "w-64",
+      "collapsed_width": "w-20",
+      "style": "bg-white border-r border-slate-200 fixed left-0 top-0 bottom-0 z-40 transition-all duration-300 shadow-sm flex flex-col",
+      "header_logo": "Pemerintah Kabupaten Murung Raya - Dinas ESDM / Bappelitbangda",
+      "nav_items": [
+        {"key": "ringkasan", "label": "Ringkasan / Dashboard", "icon": "LayoutDashboard", "path": "/dashboard"},
+        {"key": "upload", "label": "Upload Excel Data", "icon": "FileSpreadsheet", "path": "/upload"},
+        {"key": "kecamatan", "label": "Data Kecamatan", "icon": "Building2", "path": "/kecamatan"},
+        {"key": "desakal", "label": "Data Desa & Kelurahan", "icon": "MapPin", "path": "/desa"},
+        {"key": "keluarga", "label": "Data Keluarga / RT", "icon": "Users", "path": "/keluarga"},
+        {"key": "periode", "label": "Periode Data", "icon": "Calendar", "path": "/periode"},
+        {"key": "pengguna", "label": "Pengguna Admin", "icon": "UserCog", "path": "/pengguna"},
+        {"key": "pengaturan", "label": "Pengaturan", "icon": "Settings", "path": "/pengaturan"}
+      ]
+    },
+    "header_bar": {
+      "style": "h-16 bg-white/90 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 px-6 flex items-center justify-between shadow-xs",
+      "components": [
+        "Sidebar Toggle Button",
+        "Current Active Periode Selector Badge (e.g. Triwulan IV 2025 - Active)",
+        "Search Global / Filter Quick Jump",
+        "Notification Bell Badge",
+        "User Profile Avatar Menu (Admin ESDM Murung Raya)"
+      ]
+    }
+  },
+  "key_features_and_flows": {
+    "login_page": {
+      "type": "Manual Username & Password Authentication",
+      "route": "/login",
+      "elements": [
+        "Header branding with Official Logo Badge of Kabupaten Murung Raya (Puruk Cahu)",
+        "Title: 'Sistem Laporan Rasio Elektrifikasi'",
+        "Subtitle: 'Dinas Energi dan Sumber Daya Mineral / Pemerintah Kab. Murung Raya'",
+        "Form Fields: Username / Email, Password, Remember Me",
+        "Quick Demo Credentials Toggle (e.g., admin_esdm / pass123)",
+        "Interactive submit state with toast notification on login success"
+      ]
+    },
+    "dashboard_overview": {
+      "route": "/dashboard",
+      "kpi_cards": [
+        {
+          "id": "kpi-total-rt",
+          "title": "Total Rumah Tangga (RT)",
+          "value": "32,850 RT",
+          "subtext": "+1,240 RT dari periode lalu",
+          "badge": "10 Kecamatan",
+          "icon": "Home"
+        },
+        {
+          "id": "kpi-rasio-elektrifikasi",
+          "title": "Rasio Elektrifikasi (RE)",
+          "value": "88.45%",
+          "subtext": "+2.15% dari Triwulan III 2025",
+          "badge": "Target 2026: 92.50%",
+          "color": "text-teal-600 font-bold",
+          "icon": "Zap"
+        },
+        {
+          "id": "kpi-rt-pln",
+          "title": "RT Berlistrik PLN",
+          "value": "22,410 RT",
+          "subtext": "68.22% dari total RT",
+          "badge": "PLN Grid",
+          "color": "text-sky-600",
+          "icon": "PlugZap"
+        },
+        {
+          "id": "kpi-rt-non-pln",
+          "title": "RT Berlistrik Non-PLN",
+          "value": "6,645 RT",
+          "subtext": "20.23% (PLTS Terpusat, Microhydro, Genset Komunal)",
+          "badge": "EBT / Off-Grid",
+          "color": "text-emerald-600",
+          "icon": "Sun"
+        },
+        {
+          "id": "kpi-rt-belum",
+          "title": "RT Belum Berlistrik",
+          "value": "3,795 RT",
+          "subtext": "11.55% prioritas program prioritas 2026",
+          "badge": "Perlu Intervensi",
+          "color": "text-amber-600",
+          "icon": "AlertTriangle"
+        }
+      ],
+      "charts": [
+        {
+          "id": "chart-proporsi-listrik",
+          "type": "Donut / Pie Chart",
+          "title": "Proporsi Sumber Listrik Rumah Tangga",
+          "subtitle": "Perbandingan PLN vs Non-PLN (PLTS/Mandiri) vs Belum Berlistrik",
+          "data_categories": ["PLN Grid (68.2%)", "Non-PLN / EBT (20.2%)", "Belum Berlistrik (11.6%)"]
+        },
+        {
+          "id": "chart-rasio-kecamatan",
+          "type": "Bar Chart (Horizontal or Vertical Stacked)",
+          "title": "Rasio Elektrifikasi per Kecamatan",
+          "subtitle": "10 Kecamatan di Kabupaten Murung Raya",
+          "items": ["Murung", "Laung Tuhup", "Tanah Siang", "Tanah Siang Selatan", "Permata Intan", "Sumber Barito", "Sungai Babuat", "Barito Tuhup Raya", "Seribu Riam", "Uut Murung"]
+        },
+        {
+          "id": "chart-tren-periode",
+          "type": "Line Chart with Area Gradient",
+          "title": "Tren Rasio Elektrifikasi Antar Triwulan (2023 - 2025)",
+          "subtitle": "Progres peningkatan cakupan listrik per triwulan",
+          "timepoints": ["TW1 2024", "TW2 2024", "TW3 2024", "TW4 2024", "TW1 2025", "TW2 2025", "TW3 2025", "TW4 2025"]
+        }
+      ]
+    },
+    "excel_upload_flow": {
+      "route": "/upload",
+      "steps": [
+        "1. Select Periode Data (e.g. TW1 2026 / TW4 2025)",
+        "2. Drag & Drop File Excel (.xlsx / .xls) or Click Browse (Provide downloadable sample Excel template)",
+        "3. File Inspection & Auto Validation (Checks required columns: ID_RT, Kecamatan, Desa, Nama_KK, Status_Listrik, Sumber_Energy, Daya_VA)",
+        "4. Validation Results Summary (Show total valid rows, error rows, duplicate check warnings)",
+        "5. Review Data Table Preview before commit",
+        "6. Click 'Simpan & Perbarui Dashboard' -> Simulates database commit -> Shows Success Modal -> Auto redirects/updates live dashboard"
+      ]
+    },
+    "data_tables": {
+      "kecamatan_table": {
+        "columns": ["No", "Kode Kecamatan", "Nama Kecamatan", "Jumlah Desa/Kel", "Total RT", "RT PLN", "RT Non-PLN", "RT Belum", "Rasio (%)", "Aksi (Detail/Export)"]
+      },
+      "desa_table": {
+        "columns": ["No", "Nama Desa/Kel", "Kecamatan", "Status Wilayah", "Total RT", "PLN", "Non-PLN (PLTS)", "Belum Listrik", "Status Elektrifikasi", "Aksi"]
+      },
+      "keluarga_rt_table": {
+        "columns": ["ID RT", "Nama Kepala Keluarga", "NIK", "Alamat / RT", "Desa / Kelurahan", "Kecamatan", "Sumber Listrik", "Daya (VA) / Jenis", "Status", "Aksi"]
+      }
+    },
+    "periode_data_management": {
+      "route": "/periode",
+      "features": ["Daftar Periode Triwulan / Tahun", "Set Periode Aktif", "Tambah Periode Baru (e.g. TW1 2026)", "Status Lock / Unlock Data"]
+    },
+    "admin_users_management": {
+      "route": "/pengguna",
+      "features": ["Daftar Admin ESDM / Operator Kecamatan", "Tambah Pengguna Baru", "Ubah Peran (Super Admin, Verifikator Data, Viewer Eksekutif)", "Status Aktif/Nonaktif"]
+    },
+    "settings_page": {
+      "route": "/pengaturan",
+      "features": ["Profil Instansi (Pemerintah Kabupaten Murung Raya)", "Target Rasio Elektrifikasi Daerah (RUKD)", "Konfigurasi Bobot Non-PLN", "Backup & Restore Database"]
+    }
+  },
+  "datasets": {
+    "kecamatan_list": [
+      {"id": "KEC-01", "nama": "Murung", "ibu_kota": "Puruk Cahu", "total_desa": 15, "rt_total": 8500, "rt_pln": 7200, "rt_non_pln": 950, "rt_belum": 350, "rasio": 95.88},
+      {"id": "KEC-02", "nama": "Laung Tuhup", "ibu_kota": "Muara Laung", "total_desa": 26, "rt_total": 5200, "rt_pln": 3800, "rt_non_pln": 900, "rt_belum": 500, "rasio": 90.38},
+      {"id": "KEC-03", "nama": "Tanah Siang", "ibu_kota": "Saripoi", "total_desa": 27, "rt_total": 4600, "rt_pln": 3100, "rt_non_pln": 1050, "rt_belum": 450, "rasio": 90.22},
+      {"id": "KEC-04", "nama": "Tanah Siang Selatan", "ibu_kota": "Dirung Lingkin", "total_desa": 7, "rt_total": 2100, "rt_pln": 1650, "rt_non_pln": 300, "rt_belum": 150, "rasio": 92.86},
+      {"id": "KEC-05", "nama": "Permata Intan", "ibu_kota": "Tumbang Lahung", "total_desa": 12, "rt_total": 3400, "rt_pln": 2400, "rt_non_pln": 700, "rt_belum": 300, "rasio": 91.18},
+      {"id": "KEC-06", "nama": "Sumber Barito", "ibu_kota": "Tumbang Kunyi", "total_desa": 9, "rt_total": 2800, "rt_pln": 1500, "rt_non_pln": 850, "rt_belum": 450, "rasio": 83.93},
+      {"id": "KEC-07", "nama": "Barito Tuhup Raya", "ibu_kota": "Makunjung", "total_desa": 11, "rt_total": 2200, "rt_pln": 1100, "rt_non_pln": 700, "rt_belum": 400, "rasio": 81.82},
+      {"id": "KEC-08", "nama": "Sungai Babuat", "ibu_kota": "Tumbang Kolon", "total_desa": 6, "rt_total": 1500, "rt_pln": 950, "rt_non_pln": 400, "rt_belum": 150, "rasio": 90.00},
+      {"id": "KEC-09", "nama": "Seribu Riam", "ibu_kota": "Muara Joloi", "total_desa": 7, "rt_total": 1450, "rt_pln": 450, "rt_non_pln": 550, "rt_belum": 450, "rasio": 68.97},
+      {"id": "KEC-10", "nama": "Uut Murung", "ibu_kota": "Tumbang Olong", "total_desa": 5, "rt_total": 1100, "rt_pln": 260, "rt_non_pln": 245, "rt_belum": 595, "rasio": 45.91}
+    ]
+  },
+  "image_urls": {
+    "regency_banner": "https://images.pexels.com/photos/27627207/pexels-photo-27627207.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "solar_energy_rural": "https://images.pexels.com/photos/21832812/pexels-photo-21832812.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "river_village_aerial": "https://images.pexels.com/photos/34470540/pexels-photo-34470540.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+    "official_avatar": "https://images.unsplash.com/photo-1767615792114-f30422379aaf?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHwxfHxpbmRvbmVzaWFuJTIwcHJvZmVzc2lvbmFsJTIwZ292ZXJubWVudCUyMG9mZmljaWFsJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzkwMDYxMzE3fDA&ixlib=rb-4.1.0&q=85"
+  },
+  "component_instructions": {
+    "file_structure": "Use standard React files with JavaScript (.js extension, not .tsx). Ensure lucide-react, recharts / chart components, sonner toast, and tailwind classes are used.",
+    "data_testid_rules": "All interactive elements, buttons, inputs, tabs, modal triggers, table rows, and metric cards MUST have descriptive data-testid attributes (e.g. data-testid=\"login-submit-button\", data-testid=\"upload-dropzone\", data-testid=\"kpi-rasio-elektrifikasi\", data-testid=\"kecamatan-table-row-01\", data-testid=\"btn-export-excel\").",
+    "responsive": "Ensure seamless sidebar toggling for tablet and mobile viewports with smooth drawer backdrop.",
+    "interactivity": "All filter dropdowns, search inputs, modal popups, step transitions, and tab switches MUST be fully interactive with realistic state management and dynamic UI update feedback."
+  },
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons. Use lucide-react icons instead.",
+    "Every interaction needs micro-animations - hover states, transitions, entrance animations. Static = dead.",
+    "Use generous spacing for clean data scannability. Containers with border must have padding on text content to avoid collision.",
+    "All interactive and key informational elements MUST include data-testid attribute for stable testing.",
+    "Prioritize pre-existing components from src/components/ui when applicable, override fixed height restrictions if content gets cut off."
+  ]
+}
