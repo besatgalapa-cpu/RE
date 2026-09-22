@@ -13,6 +13,7 @@ import Keluarga from "@/pages/Keluarga";
 import Periode from "@/pages/Periode";
 import Pengguna from "@/pages/Pengguna";
 import Pengaturan from "@/pages/Pengaturan";
+import Galeri from "@/pages/Galeri";
 
 const P = ({ children }) => (
   <ProtectedRoute>
@@ -36,6 +37,7 @@ function App() {
             <Route path="/periode" element={<P><Periode /></P>} />
             <Route path="/pengguna" element={<P><Pengguna /></P>} />
             <Route path="/pengaturan" element={<P><Pengaturan /></P>} />
+            <Route path="/galeri" element={<P><Galeri /></P>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>

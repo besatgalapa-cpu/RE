@@ -18,6 +18,7 @@ load_dotenv(ROOT_DIR / '.env')
 from auth import (hash_password, verify_password, create_access_token,
                   create_refresh_token, get_current_user, seed_admin)
 from excel_parser import parse_re_workbook
+from storage import init_storage, put_object, get_object
 
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
@@ -408,6 +409,60 @@ async def upload_commit(payload: CommitInput, user=Depends(current_user)):
     return {"message": "Data tersimpan & dashboard diperbarui", "period_id": period_id, "saved": len(docs)}
 
 
+# ---------------- Galeri Foto (Object Storage) ----------------
+ALLOWED_IMG = {"image/jpeg", "image/png", "image/webp", "image/gif"}
+MAX_UPLOAD = 10 * 1024 * 1024
+
+
+@api_router.get("/galeri")
+async def galeri_list(user=Depends(current_user)):
+    docs = await db.galeri.find({"is_deleted": False}, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    return docs
+
+
+@api_router.post("/galeri/upload")
+async def galeri_upload(file: UploadFile = File(...), judul: str = Form(""),
+                        kecamatan: str = Form(""), kategori: str = Form("Wilayah"),
+                        user=Depends(current_user)):
+    if file.content_type not in ALLOWED_IMG:
+        raise HTTPException(status_code=400, detail="File harus berupa gambar (JPG/PNG/WEBP/GIF)")
+    data = await file.read()
+    if len(data) > MAX_UPLOAD:
+        raise HTTPException(status_code=400, detail="Ukuran file maksimal 10 MB")
+    ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "jpg"
+    path = f"murung-raya-re/galeri/{uuid.uuid4()}.{ext}"
+    result = put_object(path, data, file.content_type)
+    doc = {
+        "id": str(uuid.uuid4()), "storage_path": result["path"], "external_url": None,
+        "judul": judul.strip() or file.filename, "kecamatan": kecamatan.strip(), "kategori": kategori,
+        "content_type": file.content_type, "size": result.get("size", len(data)),
+        "original_filename": file.filename, "is_deleted": False, "created_at": now_iso(),
+    }
+    await db.galeri.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+
+@api_router.get("/galeri/file/{file_id}")
+async def galeri_file(file_id: str, user=Depends(current_user)):
+    rec = await db.galeri.find_one({"id": file_id, "is_deleted": False})
+    if not rec or not rec.get("storage_path"):
+        raise HTTPException(status_code=404, detail="File tidak ditemukan")
+    try:
+        data, ctype = get_object(rec["storage_path"])
+    except Exception:
+        raise HTTPException(status_code=404, detail="Objek tidak ditemukan di storage")
+    return Response(content=data, media_type=rec.get("content_type") or ctype)
+
+
+@api_router.delete("/galeri/{file_id}")
+async def galeri_delete(file_id: str, user=Depends(current_user)):
+    res = await db.galeri.update_one({"id": file_id}, {"$set": {"is_deleted": True}})
+    if not res.matched_count:
+        raise HTTPException(status_code=404, detail="Foto tidak ditemukan")
+    return {"message": "Foto dihapus"}
+
+
 @api_router.get("/")
 async def root():
     return {"message": "API Rasio Elektrifikasi Murung Raya"}
@@ -450,8 +505,40 @@ async def seed_data():
     logger.info("Seed data imported")
 
 
+GALERI_SEED = [
+    {"judul": "Lanskap Kabupaten Murung Raya", "kecamatan": "Murung", "kategori": "Wilayah",
+     "external_url": "https://images.pexels.com/photos/27627207/pexels-photo-27627207.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"},
+    {"judul": "PLTS Tersebar Pedesaan", "kecamatan": "Sumber Barito", "kategori": "Energi Terbarukan",
+     "external_url": "https://images.pexels.com/photos/21832812/pexels-photo-21832812.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"},
+    {"judul": "Desa Tepi Sungai", "kecamatan": "Laung Tuhup", "kategori": "Wilayah",
+     "external_url": "https://images.pexels.com/photos/34470540/pexels-photo-34470540.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"},
+    {"judul": "Jaringan JTM Desa", "kecamatan": "Tanah Siang", "kategori": "Jaringan Listrik",
+     "external_url": "https://images.unsplash.com/photo-1662706106992-41efbbcc5fb0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHwxfHxydXJhbCUyMGVsZWN0cmljaXR5fGVufDB8fHx8MTc5MDA2NDg4NXww&ixlib=rb-4.1.0&q=85"},
+    {"judul": "Akses Jalan Desa Terpencil", "kecamatan": "Uut Murung", "kategori": "Wilayah",
+     "external_url": "https://images.unsplash.com/photo-1696819646359-5d77448b0d3b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHw0fHxydXJhbCUyMGVsZWN0cmljaXR5fGVufDB8fHx8MTc5MDA2NDg4NXww&ixlib=rb-4.1.0&q=85"},
+    {"judul": "Kampung dengan Tiang JTR", "kecamatan": "Permata Intan", "kategori": "Jaringan Listrik",
+     "external_url": "https://images.pexels.com/photos/8174531/pexels-photo-8174531.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"},
+    {"judul": "Kunjungan Lapangan Tim Survei", "kecamatan": "Seribu Riam", "kategori": "Kegiatan",
+     "external_url": "https://images.unsplash.com/photo-1693649113430-a2b889d4252d?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzB8MHwxfHNlYXJjaHwzfHxydXJhbCUyMGVsZWN0cmljaXR5fGVufDB8fHx8MTc5MDA2NDg4NXww&ixlib=rb-4.1.0&q=85"},
+    {"judul": "Bentangan Kabel Antardesa", "kecamatan": "Barito Tuhup Raya", "kategori": "Jaringan Listrik",
+     "external_url": "https://images.pexels.com/photos/28143335/pexels-photo-28143335.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940"},
+]
+
+
 @app.on_event("startup")
 async def startup():
+    try:
+        init_storage()
+        logger.info("Object storage initialized")
+    except Exception as e:
+        logger.error(f"Storage init failed: {e}")
+    if await db.galeri.count_documents({}) == 0:
+        await db.galeri.insert_many([
+            {**g, "id": str(uuid.uuid4()), "storage_path": None, "content_type": None,
+             "size": 0, "original_filename": None, "is_deleted": False, "created_at": now_iso()}
+            for g in GALERI_SEED
+        ])
+        logger.info("Galeri seeded")
     await db.users.create_index("username", unique=True)
     await seed_admin(db)
     await seed_data()

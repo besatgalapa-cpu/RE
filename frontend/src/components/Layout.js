@@ -3,7 +3,7 @@ import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
   LayoutDashboard, FileSpreadsheet, Building2, MapPin, Users,
-  Calendar, UserCog, Settings, LogOut, Menu, Zap, ChevronDown,
+  Calendar, UserCog, Settings, LogOut, Menu, Zap, ChevronDown, Images,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -19,6 +19,7 @@ const NAV = [
   { to: "/periode", label: "Periode Data", icon: Calendar, tid: "nav-periode" },
   { to: "/pengguna", label: "Pengguna Admin", icon: UserCog, tid: "nav-pengguna" },
   { to: "/pengaturan", label: "Pengaturan", icon: Settings, tid: "nav-pengaturan" },
+  { to: "/galeri", label: "Galeri Foto", icon: Images, tid: "nav-galeri" },
 ];
 
 export default function Layout({ children }) {
@@ -44,9 +45,12 @@ export default function Layout({ children }) {
         data-testid="sidebar"
       >
         <div className="h-20 flex items-center gap-3 px-6 border-b border-slate-100">
-          <div className="w-11 h-11 rounded-xl bg-teal-600 flex items-center justify-center shadow-lg shadow-teal-600/25">
-            <Zap className="w-6 h-6 text-white" fill="white" />
-          </div>
+          <img
+            src="https://thumb.wikimedia.org/wikipedia/commons/thumb/9/95/Lambang_Kabupaten_Murung_Raya.png/250px-Lambang_Kabupaten_Murung_Raya.png"
+            alt="Lambang Kabupaten Murung Raya"
+            className="w-11 h-11 object-contain drop-shadow-sm"
+            data-testid="logo-murung-raya"
+          />
           <div className="leading-tight">
             <div className="font-extrabold text-slate-900 text-[15px]">Rasio Elektrifikasi</div>
             <div className="text-xs text-slate-500 font-medium">Kab. Murung Raya</div>
