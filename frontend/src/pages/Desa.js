@@ -24,7 +24,7 @@ export default function Desa() {
     <div className="space-y-5" data-testid="desa-page">
       <div>
         <h2 className="text-2xl font-extrabold text-slate-900">Data Desa & Kelurahan</h2>
-        <p className="text-sm text-slate-500">Sebaran desa/kelurahan dengan rumah tangga terdata belum berlistrik</p>
+        <p className="text-sm text-slate-500">Daftar resmi 125 desa & kelurahan beserta cakupan listrik rumah tangga</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -43,16 +43,22 @@ export default function Desa() {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-xs text-slate-500">Total Desa/Kel Terdata</div>
-          <div className="text-2xl font-extrabold text-teal-600 font-mono">{rows.length}</div>
+          <div className="text-xs text-slate-500">Total Desa/Kel</div>
+          <div className="text-2xl font-extrabold text-teal-600 font-mono">{fmtNum(rows.reduce((a, r) => a + 1, 0))}</div>
+          <div className="text-[11px] text-slate-400">{rows.filter((r) => r.jenis === "Desa").length} Desa · {rows.filter((r) => r.jenis === "Kelurahan").length} Kelurahan</div>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-xs text-slate-500">Total RT Belum Terdata</div>
-          <div className="text-2xl font-extrabold text-amber-600 font-mono">{fmtNum(rows.reduce((a, r) => a + (r.rt_belum_terdata || 0), 0))}</div>
+          <div className="text-xs text-slate-500">Total Rumah Tangga</div>
+          <div className="text-2xl font-extrabold text-slate-800 font-mono">{fmtNum(rows.reduce((a, r) => a + (r.total_rt || 0), 0))}</div>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-xs text-slate-500">Kecamatan</div>
-          <div className="text-2xl font-extrabold text-sky-600 font-mono">{(res?.kecamatan_list || []).length}</div>
+          <div className="text-xs text-slate-500">RT Berlistrik</div>
+          <div className="text-2xl font-extrabold text-emerald-600 font-mono">{fmtNum(rows.reduce((a, r) => a + (r.rt_pln || 0) + (r.rt_nonpln || 0), 0))}</div>
+          <div className="text-[11px] text-slate-400">PLN {fmtNum(rows.reduce((a, r) => a + (r.rt_pln || 0), 0))} · Non-PLN {fmtNum(rows.reduce((a, r) => a + (r.rt_nonpln || 0), 0))}</div>
+        </div>
+        <div className="bg-white rounded-xl border border-slate-200 p-4">
+          <div className="text-xs text-slate-500">RT Belum Berlistrik</div>
+          <div className="text-2xl font-extrabold text-amber-600 font-mono">{fmtNum(rows.reduce((a, r) => a + (r.rt_belum || 0), 0))}</div>
         </div>
       </div>
 
@@ -67,18 +73,24 @@ export default function Desa() {
                   <th className="px-4 py-3 font-semibold">No</th>
                   <th className="px-4 py-3 font-semibold">Nama Desa / Kelurahan</th>
                   <th className="px-4 py-3 font-semibold">Kecamatan</th>
-                  <th className="px-4 py-3 font-semibold">Status</th>
-                  <th className="px-4 py-3 font-semibold text-right">RT Belum Terdata</th>
+                  <th className="px-4 py-3 font-semibold">Jenis</th>
+                  <th className="px-4 py-3 font-semibold text-right">Total RT</th>
+                  <th className="px-4 py-3 font-semibold text-right text-sky-600">PLN</th>
+                  <th className="px-4 py-3 font-semibold text-right text-emerald-600">Non-PLN</th>
+                  <th className="px-4 py-3 font-semibold text-right text-amber-600">Belum</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {rows.map((r, i) => (
                   <tr key={i} className="hover:bg-slate-50/70 transition-colors" data-testid={`desa-row-${i}`}>
-                    <td className="px-4 py-3 text-slate-400 font-mono">{i + 1}</td>
+                    <td className="px-4 py-3 text-slate-400 font-mono">{r.no || i + 1}</td>
                     <td className="px-4 py-3 font-semibold text-slate-900 flex items-center gap-2"><MapPin className="w-4 h-4 text-teal-500" />{r.nama}</td>
                     <td className="px-4 py-3 text-slate-600">{r.kecamatan}</td>
-                    <td className="px-4 py-3"><span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600">{r.status || "Desa"}</span></td>
-                    <td className="px-4 py-3 text-right font-mono text-amber-700 font-medium">{fmtNum(r.rt_belum_terdata)}</td>
+                    <td className="px-4 py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${r.jenis === "Kelurahan" ? "bg-teal-50 text-teal-700" : "bg-slate-100 text-slate-600"}`}>{r.jenis || "Desa"}</span></td>
+                    <td className="px-4 py-3 text-right font-mono font-medium">{fmtNum(r.total_rt)}</td>
+                    <td className="px-4 py-3 text-right font-mono text-sky-700">{fmtNum(r.rt_pln)}</td>
+                    <td className="px-4 py-3 text-right font-mono text-emerald-700">{fmtNum(r.rt_nonpln)}</td>
+                    <td className="px-4 py-3 text-right font-mono text-amber-700 font-medium">{fmtNum(r.rt_belum)}</td>
                   </tr>
                 ))}
               </tbody>
